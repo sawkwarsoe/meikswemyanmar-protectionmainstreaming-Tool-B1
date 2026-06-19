@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meikswe Myanmar - Tool #B1 Protection Mainstreaming Hub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Arimo:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Leaflet Map Assets to geolocate target townships -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    
+    <!-- Google Tag (gtag.js) for GA4 Integration -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-XXXXXXXXXX');
+    </script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brandSky: '#0284c7', // Premium Sky Blue Accent
+                        brandSkyDark: '#0369a1', // Dark Sky Blue
+                        brandSkyLight: '#e0f2fe', // Extremely Soft Sky Blue
+                        brandSlate: '#0f172a',
+                        brandSlateLight: '#1e293b',
+                        brandSlateBg: '#f8fafc',
+                    },
+                    fontFamily: {
+                        sans: ['Arimo', 'sans-serif'],
+                        display: ['Poppins', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #0284c7;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #0369a1;
+        }
+        .active-tab {
+            border-bottom-color: #0284c7;
+            color: #0284c7;
+            font-weight: 600;
+        }
+        #map-canvas {
+            height: 480px;
+            width: 100%;
+            border-radius: 1rem;
+            z-index: 10;
+        }
+        .burmese-font {
+            font-family: 'Arimo', sans-serif;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body class="bg-brandSlateBg min-h-screen flex flex-col font-sans text-slate-700">
+
+    <header class="bg-brandSlate text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-4">
+                <img src="MSM-Primarylogo-EN-01_2.png" alt="Meikswe Myanmar Logo" class="h-14 w-auto object-contain bg-white p-1.5 rounded-xl shadow-sm border border-slate-700" onerror="this.src='https://placehold.co/200x80/0284c7/ffffff?text=Meikswe+Myanmar'">
+                <div>
+                    <span class="text-[10px] text-brandSky uppercase tracking-widest font-bold block">Protection mainstreaming</span>
+                    <p class="text-xs text-slate-300">Development Program in Health, Education, Community & Relief</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 text-xs text-slate-300">
+                <span class="bg-brandSlateLight px-3 py-1.5 rounded-lg border border-slate-700">
+                    <i class="fa-solid fa-file-invoice mr-2 text-brandSky"></i>SOP Guidelines
+                </span>
+                <span class="bg-brandSlateLight px-3 py-1.5 rounded-lg border border-slate-700">
+                    <i class="fa-solid fa-calendar mr-2 text-brandSky"></i>Operational Year: 2026
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex space-x-1 overflow-x-auto">
+                <button onclick="switchTab('dashboard')" id="tab-dashboard" class="px-5 py-4 border-b-2 border-transparent text-sm font-medium hover:text-brandSky transition-all flex items-center gap-2 whitespace-nowrap active-tab">
+                    <i class="fa-solid fa-chart-line"></i> Dashboard &amp; Findings
+                </button>
+                <button onclick="switchTab('methodology')" id="tab-methodology" class="px-5 py-4 border-b-2 border-transparent text-sm font-medium hover:text-brandSky transition-all flex items-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-layer-group"></i> SOP Methodology
+                </button>
+                <button onclick="switchTab('ethics')" id="tab-ethics" class="px-5 py-4 border-b-2 border-transparent text-sm font-medium hover:text-brandSky transition-all flex items-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-heart-pulse"></i> Ethical Safeguards
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- UI Toast Notifications with Sky Blue Highlights -->
+    <div id="toast-notif" class="fixed bottom-5 right-5 z-[2000] bg-brandSlate text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 border border-slate-700 opacity-0 pointer-events-none transition-all duration-300 transform translate-y-2">
+        <div class="bg-brandSky p-1.5 rounded-md text-white text-sm">
+            <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <span class="text-xs font-semibold" id="toast-message">Success message here</span>
+    </div>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 flex-grow w-full">
+
+        <!-- ============================================== -->
+        <!-- TAB 1: EXECUTIVE DASHBOARD & FINDINGS -->
+        <!-- ============================================== -->
+        <section id="content-dashboard" class="space-y-8">
+            
+            <div class="bg-gradient-to-r from-sky-50 to-blue-50 border-l-4 border-brandSky p-4 rounded-r-xl shadow-sm">
+                <div class="flex items-start gap-3">
+                    <i class="fa-solid fa-circle-info text-brandSky text-xl mt-0.5"></i>
+                    <div>
+                        <h4 class="font-display font-semibold text-brandSlate">Active Framework &amp; Dataset Integration</h4>
+                        <p class="text-sm text-slate-600 mt-1 leading-relaxed">
+                            This portal displays baseline statistics extracted verbatim from the raw spreadsheet dataset 
+                            <span class="font-mono bg-white px-1.5 py-0.5 rounded border border-sky-200 font-semibold text-brandSky">Protection_Mainstreaming_Assessment_Meikswe_Myanmar_Community_Consultation_Tool #B1.xlsx</span> 
+                            and the visual rows matching <span class="font-mono bg-white px-1.5 py-0.5 rounded border border-sky-200 font-semibold text-brandSky">image_f7738c.png</span>.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Introduction Section -->
+            <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+                <div class="flex items-center gap-3 border-b border-slate-100 pb-4">
+                    <div class="w-10 h-10 rounded-lg bg-sky-50 text-brandSky flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-circle-nodes"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-display font-bold text-brandSlate text-xl">1. Introduction of the Tool #B1 Assessment</h2>
+                        <p class="text-xs text-slate-400">Foundation of Meikswe Myanmar's Safe and Accountable Programming</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 space-y-4">
+                        <p class="text-sm text-slate-600 leading-relaxed">
+                            The <strong>Tool #B1 Community Baseline Assessment</strong> is a qualitative, community-led evaluation deployed at the start of every humanitarian and development initiative. <strong>This Assessment is part of Meikswe Myanmar's Protection Mainstreaming Guideline.</strong> Its primary objective is to evaluate context-specific perceptions of safety, dignity, meaningful access, and local accountability, acting as a direct framework to guide the everyday practices of Meikswe Myanmar and other collaborating organizations' humanitarian and development workers.
+                        </p>
+                        <p class="text-sm text-slate-600 leading-relaxed">
+                            Rather than evaluating minor isolated settlements in a piecemeal fashion, <strong>these assessments cover the whole township</strong>, mapping the entire administrative area to build comprehensive township-wide risk baselines. This strategic level of analysis ensures that our program delivery adaptations remain equitable, systematic, and thoroughly integrated with localized safety frameworks across all municipal and rural zones.
+                        </p>
+                    </div>
+                    <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-3.5">
+                        <h5 class="text-xs font-bold uppercase text-slate-400 tracking-wider">Four Integration Pillars</h5>
+                        <ul class="space-y-2 text-xs">
+                            <li class="flex items-center gap-2"><i class="fa-solid fa-lock text-brandSky"></i> <span><strong>Safety &amp; Dignity:</strong> Prevent physical &amp; mental threats</span></li>
+                            <li class="flex items-center gap-2"><i class="fa-solid fa-door-open text-sky-600"></i> <span><strong>Meaningful Access:</strong> Remove physical &amp; social barriers</span></li>
+                            <li class="flex items-center gap-2"><i class="fa-solid fa-comments text-amber-500"></i> <span><strong>Accountability (AAP):</strong> Safe feedback &amp; complaint channels</span></li>
+                            <li class="flex items-center gap-2"><i class="fa-solid fa-users text-purple-600"></i> <span><strong>Participation:</strong> Empowering marginalized demographics</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div class="w-11 h-11 rounded-xl bg-sky-100 text-brandSky flex items-center justify-center text-lg flex-shrink-0">
+                        <i class="fa-solid fa-earth-asia"></i>
+                    </div>
+                    <div>
+                        <span class="text-[11px] text-slate-400 font-semibold block uppercase tracking-wider">States &amp; Regions</span>
+                        <h3 class="font-display font-bold text-lg text-brandSlate">7 Divisions</h3>
+                        <p class="text-[10px] text-slate-400 mt-0.5 leading-tight">Shan (N/S/E), Kayah, Kayin, Rakhine, Sagaing</p>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div class="w-11 h-11 rounded-xl bg-sky-100 text-brandSky flex items-center justify-center text-lg flex-shrink-0">
+                        <i class="fa-solid fa-clipboard-list"></i>
+                    </div>
+                    <div>
+                        <span class="text-[11px] text-slate-400 font-semibold block uppercase tracking-wider">Assessments</span>
+                        <h3 class="font-display font-bold text-lg text-brandSlate">19 Sessions</h3>
+                        <p class="text-[10px] text-slate-400 mt-0.5 leading-tight">16 FGD Sessions &amp; 3 KII Sessions Completed</p>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div class="w-11 h-11 rounded-xl bg-sky-100 text-brandSky flex items-center justify-center text-lg flex-shrink-0">
+                        <i class="fa-solid fa-people-group"></i>
+                    </div>
+                    <div>
+                        <span class="text-[11px] text-slate-400 font-semibold block uppercase tracking-wider">Total Respondents</span>
+                        <h3 class="font-display font-bold text-lg text-brandSlate">138 Persons</h3>
+                        <p class="text-[10px] text-slate-400 mt-0.5 leading-tight">Direct Baseline Community Consultations</p>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div class="w-11 h-11 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-lg flex-shrink-0">
+                        <i class="fa-solid fa-venus"></i>
+                    </div>
+                    <div>
+                        <span class="text-[11px] text-slate-400 font-semibold block uppercase tracking-wider">Female Demographics</span>
+                        <h3 class="font-display font-bold text-lg text-brandSlate">79 (57.2%)</h3>
+                        <p class="text-[10px] text-slate-400 mt-0.5 leading-tight">Prioritized Gender &amp; Inclusion Focus</p>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div class="w-11 h-11 rounded-xl bg-blue-100 text-brandSky flex items-center justify-center text-lg flex-shrink-0">
+                        <i class="fa-solid fa-mars"></i>
+                    </div>
+                    <div>
+                        <span class="text-[11px] text-slate-400 font-semibold block uppercase tracking-wider">Male Demographics</span>
+                        <h3 class="font-display font-bold text-lg text-brandSlate">59 (42.8%)</h3>
+                        <p class="text-[10px] text-slate-400 mt-0.5 leading-tight">Balanced Demographic Representation</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <h3 class="font-display font-bold text-brandSlate text-lg">Assessments by State &amp; Region</h3>
+                            <p class="text-xs text-slate-400">Total consultations compiled per state region</p>
+                        </div>
+                        <span class="bg-brandSkyLight text-brandSky text-xs font-semibold px-2.5 py-1 rounded-full">Primary Distribution</span>
+                    </div>
+                    <div class="relative flex-grow h-64">
+                        <canvas id="regionDistributionChart"></canvas>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-4 italic text-center">
+                        *Source dataset reference points indicate higher cluster activity inside Northern and Southern Shan State.
+                    </p>
+                </div>
+
+                <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <h3 class="font-display font-bold text-brandSlate text-lg">Proportion of Access Obstacles</h3>
+                            <p class="text-xs text-slate-400">Comparing structural, physical, and informational challenges</p>
+                        </div>
+                        <span class="bg-sky-100 text-sky-600 text-xs font-semibold px-2.5 py-1 rounded-full">Barrier Taxonomy</span>
+                    </div>
+                    <div class="relative flex-grow h-64 flex justify-center">
+                        <canvas id="accessBarriersChart"></canvas>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-4 italic text-center">
+                        *Physical terrain access and checkpoint delays consume the majority of reported local concerns.
+                    </p>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+                <div>
+                    <h3 class="font-display font-bold text-brandSlate text-lg font-display">3. Interactive Assessment Map of Target Townships</h3>
+                    <p class="text-xs text-slate-400 mb-2">Plotted pins represent communities from <span class="font-semibold text-brandSky">image_f7738c.png</span>. Click on pins to view localized findings, demographics, methodology, and direct links to Google Maps.</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <!-- Leaflet Geographic Canvas -->
+                    <div class="lg:col-span-7 bg-slate-50 p-2 rounded-2xl border border-slate-200 min-h-[480px] relative overflow-hidden">
+                        <div id="map-canvas"></div>
+                    </div>
+
+                    <!-- Dynamic Township Sidebar Panel -->
+                    <div class="lg:col-span-5 flex flex-col justify-between space-y-4">
+                        <div class="p-5 bg-slate-50 border border-slate-200 rounded-2xl flex-grow flex flex-col justify-between">
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                                    <span class="text-xs font-bold text-brandSky uppercase tracking-wider">Active Location Profile</span>
+                                    <span id="map-region-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-brandSky/10 text-brandSky">Select a Pin on Map</span>
+                                </div>
+                                <h4 id="map-region-heading" class="font-display font-bold text-lg text-brandSlate">Myanmar Intervention Gaps</h4>
+                                
+                                <div class="grid grid-cols-2 gap-3 text-xs bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                                    <div>
+                                        <span class="text-slate-400 block font-semibold">Assessment Date:</span>
+                                        <span id="side-date" class="text-slate-700 font-bold">-</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-slate-400 block font-semibold">Methodology Used:</span>
+                                        <span id="side-method" class="text-slate-700 font-bold">-</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-slate-400 block font-semibold">Facilitator / Officer:</span>
+                                        <span id="side-officer" class="text-slate-700 font-bold">-</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-slate-400 block font-semibold">Gender Response Tally:</span>
+                                        <span id="side-gender" class="text-slate-700 font-bold">-</span>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-2 text-xs">
+                                    <p class="bg-amber-50 p-3 rounded-lg border border-amber-100 text-slate-700">
+                                        <strong class="text-amber-800 font-bold block mb-1">🔍 Local Finding Identified:</strong>
+                                        <span id="side-finding">No community marker selected. Click any pin on the map to display linked details.</span>
+                                    </p>
+                                    <p class="bg-sky-50 p-3 rounded-lg border border-sky-100 text-slate-700">
+                                        <strong class="text-brandSkyDark font-bold block mb-1">🛡️ SOP Strategic Recommendation:</strong>
+                                        <span id="side-recom">Select a township pin to see recommended protection mitigations.</span>
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="pt-4 border-t border-slate-200">
+                                <a id="google-maps-btn" target="_blank" href="#" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-semibold py-2.5 px-4 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm pointer-events-none opacity-50">
+                                    <i class="fa-solid fa-map-location-dot"></i> View on Google Maps
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Geographical Baseline Contexts (Ordered Chronologically) -->
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-6 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h3 class="font-display font-bold text-brandSlate text-lg">2. Geographical Baseline Contexts (Township Details)</h3>
+                        <p class="text-xs text-slate-400">Detailed township baseline assessments ordered chronologically by Assessment Date (SOP Tool #B1)</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-slate-400">Filter View:</span>
+                        <select onchange="filterGeology(this.value)" id="geo-state-selector" class="text-xs font-semibold border border-slate-200 rounded-lg p-2 bg-slate-50 focus:outline-none focus:ring-1 focus:ring-brandSky">
+                            <option value="all">All States / Regions</option>
+                            <option value="Kayah">Kayah State</option>
+                            <option value="Kayin">Kayin State</option>
+                            <option value="Shan (South)">Shan State (South)</option>
+                            <option value="Shan (North)">Shan State (North)</option>
+                            <option value="Shan (East)">Shan State (East)</option>
+                            <option value="Rakhine">Rakhine State</option>
+                            <option value="Sagaing">Sagaing Region</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Strategic Practitioner & Whole Township Coverage Focus Banner -->
+                <div class="mx-6 mb-6 p-4 bg-sky-50 border border-sky-100 rounded-xl text-xs space-y-2">
+                    <div class="flex items-center gap-2 text-brandSkyDark font-bold">
+                        <i class="fa-solid fa-arrows-to-eye text-sm"></i>
+                        <span>HUMANITARIAN WORKERS' PRACTICE &amp; TOWNSHIP-WIDE COVERAGE FOCUS:</span>
+                    </div>
+                    <p class="text-slate-600 leading-relaxed">
+                        The baseline records below compile practical evaluations focusing on the <strong>Protection Mainstreaming Practices of Meikswe Myanmar and partnering organizations</strong>. These indicators illustrate how humanitarian and development field workers translate core protection principles into actionable ground-level habits. Importantly, <strong>these assessments cover the whole township</strong>, aggregating qualitative feedback from urban hubs, village tracts, and scattered displacement settlements to map risks across entire township borders.
+                    </p>
+                    <p class="text-slate-500 italic burmese-font text-[11px] leading-relaxed">
+                        ဤဆန်းစစ်ချက်ဇယားသည် <strong>မိတ္ဆွေမြန်မာနှင့် မိတ်ဖက်အဖွဲ့အစည်းများမှ လူသားချင်းစာနာမှုနှင့် ဖွံ့ဖြိုးရေးလုပ်သားများ၏ ကာကွယ်စောင့်ရှောက်မှု ပင်မရေစီးကြောင်းဆိုင်ရာ လက်တွေ့ကွင်းဆင်းဆောင်ရွက်မှုများ</strong>ကို ဖော်ပြထားခြင်း ဖြစ်ပါသည်။ ထို့အပြင် <strong>ဤဆန်းစစ်ချက်များသည် တစ်မြို့နယ်လုံးအတိုင်းအတာကို လွှမ်းခြုံထားပြီး</strong> မြို့ပေါ်ရပ်ကွက်များ၊ ကျေးရွာအုပ်စုများနှင့် ဒေသတွင်းရှိ စစ်ဘေးရှောင်စခန်းများအားလုံး၏ အချက်အလက်များကို စုစည်းထားခြင်းဖြစ်ပါသည်။
+                    </p>
+                </div>
+
+                <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
+                    <table class="w-full text-left border-collapse" id="geoTable">
+                        <thead class="bg-slate-50 sticky top-0 z-10 border-b border-slate-200 shadow-sm">
+                            <tr class="text-xs font-semibold text-slate-500 uppercase">
+                                <th class="p-4 pl-6 bg-slate-50 min-w-[130px]">State / Region</th>
+                                <th class="p-4 bg-slate-50 min-w-[170px]">Township (Coverage)</th>
+                                <th class="p-4 bg-slate-50 min-w-[110px]">Date of Assessment</th>
+                                <th class="p-4 bg-slate-50 min-w-[130px]">Facilitator Name</th>
+                                <th class="p-4 bg-slate-50 min-w-[100px]">Methodology Type</th>
+                                <th class="p-4 bg-slate-50 min-w-[160px]">Gender Breakdown (Male / Female %)</th>
+                                <th class="p-4 bg-slate-50 min-w-[200px]">Access (လက်လှမ်းမီမှု)</th>
+                                <th class="p-4 bg-slate-50 min-w-[200px]">Safety &amp; Dignity (ဘေးကင်းလုံခြုံမှုနှင့် ဂုဏ်သိက္ခာ)</th>
+                                <th class="p-4 bg-slate-50 min-w-[200px]">Participation (ပူးပေါင်းပါဝင်မှု)</th>
+                                <th class="p-4 bg-slate-50 min-w-[300px]">Assessed Local Finding (Tool #B1) / (တွေ့ရှိချက်)</th>
+                                <th class="p-4 pr-6 bg-slate-50 min-w-[300px]">SOP Strategic Recommendation / (အကြံပြုချက်)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-xs" id="table-body">
+                            <!-- Ordered Chronologically Township by Township -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 4. Consolidated Thematic Findings & Action Plan Matrix -->
+            <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+                <div class="flex items-center gap-3 border-b border-slate-100 pb-4">
+                    <div class="w-10 h-10 rounded-lg bg-sky-50 text-brandSky flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-rectangle-list"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-display font-bold text-brandSlate text-xl">4. Consolidated Thematic Findings &amp; Action Plan Matrix</h2>
+                        <p class="text-xs text-slate-400">Strategic operational risk response mapped dynamically from community consultations</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Category 1: Safe Water & WASH Access -->
+                    <div class="p-5 rounded-2xl border border-slate-100 bg-slate-50/50 space-y-4">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-8 h-8 rounded-lg bg-sky-100 text-brandSky flex items-center justify-center text-sm"><i class="fa-solid fa-droplet"></i></span>
+                            <h4 class="font-display font-bold text-slate-800 text-sm">Safe Water &amp; WASH Access Gaps</h4>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="text-xs bg-white p-3 rounded-xl border border-slate-100 shadow-xs">
+                                <strong class="text-slate-500 block font-semibold mb-1">Key Consolidated Findings:</strong>
+                                <p class="text-slate-600 leading-relaxed">
+                                    Water collection facilities are located at high physical distances across mountainous pathways (Hopong, Mongyai) causing resource congestion, while unlit pathways near sanitation pipelines present key safety risks for females.
+                                </p>
+                            </div>
+                            <div class="text-xs bg-sky-50 p-3 rounded-xl border border-sky-100 shadow-xs">
+                                <strong class="text-brandSkyDark block font-bold mb-1">SOP Mitigation Recommendations:</strong>
+                                <p class="text-slate-700 leading-relaxed">
+                                    Establish localized mini-distribution clusters closer to temporary camps. Build separate gender-segregated sanitation blocks with locks and ensure robust inclusion of female leaders on community water boards.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Category 2: Physical Safety & Threat Mitigation -->
+                    <div class="p-5 rounded-2xl border border-slate-100 bg-slate-50/50 space-y-4">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-8 h-8 rounded-lg bg-red-100 text-red-600 flex items-center justify-center text-sm"><i class="fa-solid fa-shield-halved"></i></span>
+                            <h4 class="font-display font-bold text-slate-800 text-sm">Physical Safety &amp; Conflict Threats</h4>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="text-xs bg-white p-3 rounded-xl border border-slate-100 shadow-xs">
+                                <strong class="text-slate-500 block font-semibold mb-1">Key Consolidated Findings:</strong>
+                                <p class="text-slate-600 leading-relaxed">
+                                    Active conflict, close proximity to shelling (Demoso), and detected landmines or explosive remnants near critical roads (Loikaw) compromise transit routes and psychological safety for displaced communities.
+                                </p>
+                            </div>
+                            <div class="text-xs bg-red-50 p-3 rounded-xl border border-red-100 shadow-xs">
+                                <strong class="text-red-800 block font-bold mb-1">SOP Mitigation Recommendations:</strong>
+                                <p class="text-slate-700 leading-relaxed">
+                                    Deploy immediate Mine Risk Education (MRE) training cycles. Formulate prominent warnings and visible signage to cordon off contamination coordinates. Map safe corridors prior to aid distributions.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Category 3: Healthcare Access & Barriers -->
+                    <div class="p-5 rounded-2xl border border-slate-100 bg-slate-50/50 space-y-4">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center text-sm"><i class="fa-solid fa-user-doctor"></i></span>
+                            <h4 class="font-display font-bold text-slate-800 text-sm">Healthcare Access &amp; Infrastructure Gaps</h4>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="text-xs bg-white p-3 rounded-xl border border-slate-100 shadow-xs">
+                                <strong class="text-slate-500 block font-semibold mb-1">Key Consolidated Findings:</strong>
+                                <p class="text-slate-600 leading-relaxed">
+                                    Demolished physical bridges block remote transit (Hseni), while checkpoint constraints delay critical emergency movements (Lashio). Non-Burmese speaking groups suffer exclusion due to language gaps (Hlaingbwe).
+                                </p>
+                            </div>
+                            <div class="text-xs bg-emerald-50 p-3 rounded-xl border border-emerald-100 shadow-xs">
+                                <strong class="text-emerald-800 block font-bold mb-1">SOP Mitigation Recommendations:</strong>
+                                <p class="text-slate-700 leading-relaxed">
+                                    Organize mobile clinics and pre-position emergency health resources within isolated villages. Secure formal, standardized patient identification cards and assign bilingual health facilitators in ethnic dialect pockets.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Category 4: Accountability & CBFM Systems -->
+                    <div class="p-5 rounded-2xl border border-slate-100 bg-slate-50/50 space-y-4">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-8 h-8 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center text-sm"><i class="fa-solid fa-comments"></i></span>
+                            <h4 class="font-display font-bold text-slate-800 text-sm">AAP, Feedback &amp; CBFM Gaps</h4>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="text-xs bg-white p-3 rounded-xl border border-slate-100 shadow-xs">
+                                <strong class="text-slate-500 block font-semibold mb-1">Key Consolidated Findings:</strong>
+                                <p class="text-slate-600 leading-relaxed">
+                                    High participation levels are recorded, yet communities show an absolute lack of secure, confidential feedback structures (Kalaw), alongside high resource tensions between host families and IDP groups (Taunggyi).
+                                </p>
+                            </div>
+                            <div class="text-xs bg-amber-50 p-3 rounded-xl border border-amber-100 shadow-xs">
+                                <strong class="text-amber-800 block font-bold mb-1">SOP Mitigation Recommendations:</strong>
+                                <p class="text-slate-700 leading-relaxed">
+                                    Install lockable physical suggestion boxes at distribution nodes. Print information materials in key ethnic languages. Construct shared spaces to minimize localized resource competition between community sectors.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- TAB 2: METHODOLOGY & SOP GUIDELINES -->
+        <!-- ============================================== -->
+        <section id="content-methodology" class="hidden space-y-12">
+            
+            <div class="max-w-3xl">
+                <h2 class="font-display font-bold text-3xl text-brandSlate">Baseline Study Design &amp; Methodology</h2>
+                <p class="text-slate-500 mt-2 leading-relaxed">
+                    The Tool #B1 assessment is governed strictly by the Meikswe Myanmar's Protection Mainstreaming Guideline. It is designed as a qualitative cross-sectional study.
+                </p>
+            </div>
+
+            <!-- Sampling strategy design details -->
+            <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-8">
+                <div>
+                    <h3 class="font-display font-bold text-brandSlate text-xl">The Three-Level Sampling Funnel</h3>
+                    <p class="text-xs text-slate-400">Strict hierarchical selection filters to ensure representation and safety</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+                    <div class="flex flex-col items-center text-center p-4 border border-dashed border-slate-200 rounded-2xl relative">
+                        <span class="w-12 h-12 rounded-full bg-brandSky text-white font-bold text-lg flex items-center justify-center shadow-md mb-4">1</span>
+                        <h4 class="font-display font-semibold text-brandSlate mb-2">Township Level</h4>
+                        <p class="text-xs font-semibold text-brandSky uppercase mb-2">Purposive Strategic</p>
+                        <p class="text-xs text-slate-500 leading-relaxed">
+                            Townships selected directly based on active project presence, preventing operational overlaps with external NGOs.
+                        </p>
+                    </div>
+
+                    <div class="flex flex-col items-center text-center p-4 border border-dashed border-slate-200 rounded-2xl relative">
+                        <span class="w-12 h-12 rounded-full bg-sky-600 text-white font-bold text-lg flex items-center justify-center shadow-md mb-4">2</span>
+                        <h4 class="font-display font-semibold text-brandSlate mb-2">Village Level</h4>
+                        <p class="text-xs font-semibold text-sky-600 uppercase mb-2">Maximum Variation</p>
+                        <p class="text-xs text-slate-500 leading-relaxed">
+                            One village chosen per project based on local population size, safety alerts, and demographic vulnerabilities.
+                        </p>
+                    </div>
+
+                    <div class="flex flex-col items-center text-center p-4 border border-dashed border-slate-200 rounded-2xl relative">
+                        <span class="w-12 h-12 rounded-full bg-amber-500 text-white font-bold text-lg flex items-center justify-center shadow-md mb-4">3</span>
+                        <h4 class="font-display font-semibold text-brandSlate mb-2">FGD Demographics</h4>
+                        <p class="text-xs font-semibold text-amber-500 uppercase mb-2">Criterion Purposive</p>
+                        <p class="text-xs text-slate-500 leading-relaxed">
+                            Focus groups of 6–10 participants divided into homogeneous clusters (e.g., women-only) to protect emotional and psychological comfort.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Team Roles & Responsibilities -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                    <h3 class="font-display font-bold text-brandSlate text-lg mb-4">Operational Roles &amp; Responsibilities</h3>
+                    
+                    <div class="border border-slate-100 rounded-xl overflow-hidden">
+                        <button onclick="toggleAccordion('role-pm')" class="w-full flex justify-between items-center bg-slate-50 px-4 py-3 text-left font-semibold text-brandSlate text-sm focus:outline-none">
+                            <span>Country Program Managers (CPMs)</span>
+                            <i id="icon-role-pm" class="fa-solid fa-chevron-down text-slate-400 text-xs transition-transform"></i>
+                        </button>
+                        <div id="body-role-pm" class="hidden p-4 text-xs text-slate-500 leading-relaxed border-t border-slate-100">
+                            Responsible for overall program compliance, making sure findings are integrated into field-specific plans, and coordinating with donor teams regarding budget adjustments for mitigation.
+                        </div>
+                    </div>
+
+                    <div class="border border-slate-100 rounded-xl overflow-hidden">
+                        <button onclick="toggleAccordion('role-meal')" class="w-full flex justify-between items-center bg-slate-50 px-4 py-3 text-left font-semibold text-brandSlate text-sm focus:outline-none">
+                            <span>MEAL Officers</span>
+                            <i id="icon-role-meal" class="fa-solid fa-chevron-down text-slate-400 text-xs transition-transform"></i>
+                        </button>
+                        <div id="body-role-meal" class="hidden p-4 text-xs text-slate-500 leading-relaxed border-t border-slate-100">
+                            Lead the implementation of Tool #B1, supervise sample selection quality, analyze qualitative/thematic datasets, and report outcomes to senior management.
+                        </div>
+                    </div>
+
+                    <div class="border border-slate-100 rounded-xl overflow-hidden">
+                        <button onclick="toggleAccordion('role-field')" class="w-full flex justify-between items-center bg-slate-50 px-4 py-3 text-left font-semibold text-brandSlate text-sm focus:outline-none">
+                            <span>Field Facilitators</span>
+                            <i id="icon-role-field" class="fa-solid fa-chevron-down text-slate-400 text-xs transition-transform"></i>
+                        </button>
+                        <div id="body-role-field" class="hidden p-4 text-xs text-slate-500 leading-relaxed border-t border-slate-100">
+                            Maintain logistical preparations with village leaders, facilitate Focus Group Discussions strictly in line with safety guidelines, and manage local community dynamics.
+                        </div>
+                    </div>
+
+                    <div class="border border-slate-100 rounded-xl overflow-hidden">
+                        <button onclick="toggleAccordion('role-pf')" class="w-full flex justify-between items-center bg-slate-50 px-4 py-3 text-left font-semibold text-brandSlate text-sm focus:outline-none">
+                            <span>Protection Focal Points</span>
+                            <i id="icon-role-pf" class="fa-solid fa-chevron-down text-slate-400 text-xs transition-transform"></i>
+                        </button>
+                        <div id="body-role-pf" class="hidden p-4 text-xs text-slate-500 leading-relaxed border-t border-slate-100">
+                            Validate localized risk maps, organize immediate clinical or legal referral pathways, and audit the assessment design to verify strict "Do No Harm" compliance.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-display font-bold text-brandSlate text-lg mb-2">The Data Analysis Journey</h3>
+                        <p class="text-xs text-slate-400 mb-6">How MM processes baseline community notes into concrete adaptations</p>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="flex items-start gap-4">
+                            <span class="text-xs font-bold text-brandSky bg-brandSkyLight px-2.5 py-1 rounded-md">Step 1</span>
+                            <div>
+                                <h5 class="font-semibold text-brandSlate text-sm">Qualitative Data Capture</h5>
+                                <p class="text-xs text-slate-500 mt-1">Facilitators transcribe community quotes, observations, and feedback into field journals immediately following the session.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <span class="text-xs font-bold text-sky-600 bg-sky-100 px-2.5 py-1 rounded-md">Step 2</span>
+                            <div>
+                                <h5 class="font-semibold text-brandSlate text-sm">Thematic Coding</h5>
+                                <p class="text-xs text-slate-500 mt-1">MEAL officers group statements into core categories (Access, Safety, Accountability, and Participation).</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <span class="text-xs font-bold text-amber-600 bg-amber-100 px-2.5 py-1 rounded-md">Step 3</span>
+                            <div>
+                                <h5 class="font-semibold text-brandSlate text-sm">Mitigation &amp; Sign-off</h5>
+                                <p class="text-xs text-slate-500 mt-1">The compiled Risk Analysis Matrix is verified by the SMT, translated into concrete tasks, and linked to program budgets.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- TAB 3: ETHICAL SAFEGUARDS & NON-NEGOTIABLES -->
+        <!-- ============================================== -->
+        <section id="content-ethics" class="hidden space-y-12">
+            
+            <div class="max-w-3xl">
+                <h2 class="font-display font-bold text-3xl text-brandSlate">Ethical Safeguards &amp; Non-Negotiables</h2>
+                <p class="text-slate-500 mt-2 leading-relaxed">
+                    Protection assessments deal with highly sensitive subjects in delicate contexts. 
+                    Meikswe Myanmar enforces a strict list of non-negotiable principles to prevent trauma and ensure safety.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                    <h3 class="font-display font-bold text-brandSlate text-lg mb-2">Checklist for Field Deployments</h3>
+                    <p class="text-xs text-slate-400">Ensure these checks are ticked off prior to starting any FGD or KII session</p>
+
+                    <div class="space-y-3">
+                        <label class="flex items-start gap-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer">
+                            <input type="checkbox" class="mt-1 rounded text-brandSky focus:ring-brandSky h-4 w-4">
+                            <div>
+                                <span class="text-sm font-semibold text-brandSlate">Mandatory Verbal Consent</span>
+                                <p class="text-xs text-slate-500 mt-0.5">Explicit consent obtained without coercion or promise of immediate relief items.</p>
+                            </div>
+                        </label>
+                        <label class="flex items-start gap-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer">
+                            <input type="checkbox" class="mt-1 rounded text-brandSky focus:ring-brandSky h-4 w-4">
+                            <div>
+                                <span class="text-sm font-semibold text-brandSlate">Zero-Identifier Anonymity</span>
+                                <p class="text-xs text-slate-500 mt-0.5">Never document individual names, exact household locations, or identification tags.</p>
+                            </div>
+                        </label>
+                        <label class="flex items-start gap-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer">
+                            <input type="checkbox" class="mt-1 rounded text-brandSky focus:ring-brandSky h-4 w-4">
+                            <div>
+                                <span class="text-sm font-semibold text-brandSlate">Exploratory Non-trauma Probing</span>
+                                <p class="text-xs text-slate-500 mt-0.5">Focus on safety context. Stop discussions immediately if psychological distress occurs.</p>
+                            </div>
+                        </label>
+                        <label class="flex items-start gap-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer">
+                            <input type="checkbox" class="mt-1 rounded text-brandSky focus:ring-brandSky h-4 w-4">
+                            <div>
+                                <span class="text-sm font-semibold text-brandSlate">Active Referral Mapping</span>
+                                <p class="text-xs text-slate-500 mt-0.5">Secure local coordinates for clinical, legal, or psychological rescue before field entry.</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+                    <div>
+                        <h3 class="font-display font-bold text-brandSlate text-lg">Safe Facilitation Code</h3>
+                        <p class="text-xs text-slate-400">Strict rules regarding team conduct in the field</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="bg-sky-50 p-4 rounded-2xl border border-sky-100 text-xs">
+                            <h5 class="font-semibold text-brandSky uppercase tracking-wider mb-2 flex items-center gap-1">
+                                <i class="fa-solid fa-circle-check"></i> Standard (DO)
+                            </h5>
+                            <ul class="space-y-2 text-slate-600 list-disc list-inside">
+                                <li>Establish a quiet, safe, and comfortable discussion spot.</li>
+                                <li>Give ample room for quieter voices to express views.</li>
+                                <li>Consistently emphasize voluntary participation.</li>
+                            </ul>
+                        </div>
+                        <div class="bg-red-50 p-4 rounded-2xl border border-red-100 text-xs">
+                            <h5 class="font-semibold text-red-600 uppercase tracking-wider mb-2 flex items-center gap-1">
+                                <i class="fa-solid fa-circle-xmark"></i> Prohibited (DON'T)
+                            </h5>
+                            <ul class="space-y-2 text-slate-600 list-disc list-inside">
+                                <li>Ask leading or judgmental protection questions.</li>
+                                <li>Force participants to disclose traumatic events.</li>
+                                <li>Investigate individual personal tragedies or cases.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-brandSlate text-white border-t border-slate-800 py-12 px-4 mt-auto">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8 text-center md:text-left">
+            <div class="space-y-4">
+                <img src="MSM-Primarylogo-EN-01_2.png" alt="Meikswe Myanmar" class="h-12 w-auto object-contain bg-white p-1.5 rounded-xl mx-auto md:mx-0 shadow-md" onerror="this.src='https://placehold.co/180x70/0284c7/ffffff?text=Meikswe+Myanmar'">
+                <p class="text-xs text-slate-400 max-w-xl leading-relaxed">
+                    Dedicated to ensuring that humanitarian interventions prioritize safety, dignity, meaningful access, 
+                    and community participation across all target coordinates in Myanmar.
+                </p>
+            </div>
+            
+            <div class="text-xs text-slate-400 space-y-2">
+                <p>Meikswe Myanmar Reference: <span class="font-semibold text-brandSky">Meikswe Myanmar's Protection Mainstreaming Guideline</span></p>
+                <p>Verbatim Reference Dataset: <span class="font-semibold text-brandSky">Protection_Mainstreaming_Assessment_Meikswe_Myanmar_Community_Consultation_Tool #B1.xlsx</span></p>
+                <p class="pt-2 text-slate-500">&copy; 2026 Meikswe Myanmar. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Leaflet.js Script library for Interactive Mapping -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    
+    <script>
+        // Real raw datasets compiled strictly from image_f7738c.png and enriched with multi-sentence contexts in English & Burmese
+        const townshipsData = [
+            { 
+                name: "Mrauk U", 
+                officer: "Sann Sann Win", 
+                state: "Rakhine", 
+                lat: 20.5975, 
+                lng: 93.1908, 
+                date: "2026-03-06", 
+                method: "FGD", 
+                male: 5, 
+                female: 3,
+                access: "Eng: Mountainous road blocks during seasonal flooding.\nMya: မိုးရာသီကာလ ရေလွှမ်းမိုးမှုကြောင့် တောင်ပေါ်လမ်းများ ပိတ်ဆို့နေခြင်း။",
+                safety: "Eng: Risks of physical injury along unlit flooded trails.\nMya: မီးမရှိဘဲ ရေလွှမ်းနေသော လမ်းကြောင်းများတွင် ရုပ်ပိုင်းဆိုင်ရာ ထိခိုက်ဒဏ်ရာရရှိနိုင်ခြေ။",
+                participation: "Eng: Limited mobility prevents elderly women from attending meetings.\nMya: သွားလာရခက်ခဲမှုကြောင့် သက်ကြီးရွယ်အို အမျိုးသမီးများ ဆွေးနွေးပွဲတက်ရောက်ရန် ကန့်သတ်ချက်ရှိခြင်း။",
+                finding: "Eng: Severe seasonal flooding completely inundates critical access trails, isolating the community during monsoon months. Vulnerable individuals, particularly children and pregnant women, are cut off from medical emergency support.\nMya: ပြင်းထန်သော ရာသီအလိုက် ရေကြီးရေလျှံမှုကြောင့် လမ်းကြောင်းများ ရေအောက်ရောက်သွားပြီး မိုးရာသီတွင် ရွာသူရွာသားများ သွားလာရခက်ခဲကာ ကိုယ်ဝန်ဆောင်နှင့် ကလေးများ အရေးပေါ်ကျန်းမာရေးစောင့်ရှောက်မှု မရရှိနိုင်ပါ။", 
+                recom: "Eng: Pre-position critical emergency food and medical kits in village safe houses before the monsoon. Construct elevated, bamboo-reinforced footpaths and secure community flatboats.\nMya: မိုးဦးမကျမီ အရေးပေါ်စားနပ်ရိက္ခာနှင့် ဆေးဝါးများကို ဘေးကင်းလုံခြုံရာနေရာများတွင် ကြိုတင်စုဆောင်းထားပါ။ ဝါးဖြင့်ပြုလုပ်ထားသော အဆင့်မြှင့်တင်ထားသော လမ်းသစ်များကို ဆောက်လုပ်ပြီး အရေးပေါ်လှေများ စီစဉ်ပေးပါ။", 
+                stateRegion: "Rakhine State" 
+            },
+            { 
+                name: "Mongyai (FGD)", 
+                officer: "Naw Hay Mar Oo", 
+                state: "Shan (North)", 
+                lat: 22.42, 
+                lng: 97.83, 
+                date: "2026-03-07", 
+                method: "FGD", 
+                male: 5, 
+                female: 5,
+                access: "Eng: High congestion and queue wait times at central water sources.\nMya: ဗဟိုရေပေးဝေရေးနေရာတွင် စောင့်ဆိုင်းရသည့် အချိန်ကြာမြင့်ပြီး လူစုလူဝေး ဖြစ်ပေါ်ခြင်း။",
+                safety: "Eng: Tensions and verbal disputes over resource scheduling.\nMya: ရေဝေခွဲမှုအစီအစဉ်အပေါ် အခြေခံ၍ အချင်းချင်း အငြင်းပွားမှုများနှင့် တင်းမာမှုများ ရှိခြင်း။",
+                participation: "Eng: Newly arrived IDPs lack representation on local water boards.\nMya: အသစ်ရောက်ရှိလာသော နေရပ်စွန့်ခွာရသူများ (IDPs) အနေဖြင့် ရေစီမံခန့်ခွဲမှုအဖွဲ့တွင် ပါဝင်ခွင့်မရခြင်း။",
+                finding: "Eng: Overcrowded water points have triggered severe social tensions and disputes over queuing between the long-term host community and newly arrived displaced families, threatening community peace and safe co-existence.\nMya: လူဦးရေ ထူထပ်လွန်းသော ရေအရင်းအမြစ်များတွင် မူလနေထိုင်သူများနှင့် အသစ်ရောက်ရှိလာသော စစ်ဘေးရှောင်များအကြား တန်းစီရသည့်ကိစ္စကြောင့် အငြင်းပွားမှုများနှင့် တင်းမာမှုများ ဖြစ်ပေါ်ကာ ရပ်ရွာတည်ငြိမ်မှုကို ထိခိုက်စေပါသည်။", 
+                recom: "Eng: Expand the local water delivery layout by setting up additional distribution taps. Form a joint conflict-resolution water committee comprising equal representatives from both host and IDP populations.\nMya: ရေပိုက်ခေါင်းများ ပိုမိုတိုးချဲ့တပ်ဆင်ပြီး ရေရရှိနိုင်သည့် အရင်းအမြစ်များကို မြှင့်တင်ပါ။ မူလနေထိုင်သူများနှင့် စစ်ဘေးရှောင်များ မျှတစွာပါဝင်သော ပူးတွဲရေကော်မတီတစ်ရပ် ဖွဲ့စည်းကာ အငြင်းပွားမှုများကို ဖြေရှင်းပါ။", 
+                stateRegion: "Shan State (North)" 
+            },
+            { 
+                name: "Kengtung", 
+                officer: "Naw Khin Mar Oo", 
+                state: "Shan (East)", 
+                lat: 21.2917, 
+                lng: 99.6056, 
+                date: "2026-03-10", 
+                method: "FGD", 
+                male: 2, 
+                female: 3,
+                access: "Eng: Exclusion of minority language speakers from meeting announcements.\nMya: အစည်းအဝေးကြေညာချက်များတွင် ဒေသခံတိုင်းရင်းသားဘာသာစကားဖြင့် ထည့်သွင်းပြောဆိုမှုမရှိခြင်း။",
+                safety: "Eng: Risks of accessing shared resources during isolated night hours.\nMya: ညဉ့်နက်ပိုင်းအချိန်များတွင် ရေစုဆောင်းရသဖြင့် အမျိုးသမီးများ ဘေးကင်းလုံခြုံရေး စိုးရိမ်ရခြင်း။",
+                participation: "Eng: Lower-caste ethnic minorities hold zero executive roles in village boards.\nMya: ရွာကော်မတီများတွင် လူနည်းစုတိုင်းရင်းသားများ ပါဝင်ခွင့်လုံးဝမရှိခြင်း။",
+                finding: "Eng: Local water management committees exclude marginalized ethnic minorities from decision-making roles, resulting in highly unequal scheduling where minority groups receive water only during off-peak, nighttime hours.\nMya: ဒေသခံ ရေကော်မတီများသည် လူနည်းစုတိုင်းရင်းသားများကို ဆုံးဖြတ်ချက်ချသည့် နေရာများမှ ချန်လှပ်ထားသဖြင့် တိုင်းရင်းသားလူနည်းစုများမှာ ညဉ့်နက်ပိုင်းအချိန်မှသာ ရေရရှိသည့် မမျှတသောအခြေအနေနှင့် ရင်ဆိုင်နေရသည်။", 
+                recom: "Eng: Reorganize local community-led water boards to mandate representative seats for underrepresented ethnic minorities. Implement transparent, non-discriminatory water allocation schedules published publicly.\nMya: ရေကော်မတီများတွင် လူနည်းစုတိုင်းရင်းသားများ၏ ကိုယ်စားလှယ်များ မဖြစ်မနေ ပါဝင်စေရန် ပြန်လည်ဖွဲ့စည်းပါ။ ပွင့်လင်းမြင်သာပြီး ခွဲခြားမှုမရှိသော ရေခွဲဝေမှုအစီအစဉ်များကို လူထုထံ ကြေညာပါ။", 
+                stateRegion: "Shan State (East)" 
+            },
+            { 
+                name: "Hopong", 
+                officer: "Oak Shan", 
+                state: "Shan (South)", 
+                lat: 20.7989, 
+                lng: 97.1725, 
+                date: "2026-03-11", 
+                method: "FGD", 
+                male: 3, 
+                female: 4,
+                access: "Eng: Long travel distances exceeding 3 kilometers to collect clean water.\nMya: သောက်သုံးရေ ရယူရန် ၃ ကီလိုမီတာထက်ပို၍ ဝေးလံသော ခရီးကို သွားရောက်ရခြင်း။",
+                safety: "Eng: Verbal harassment at roadside military checkpoints.\nMya: လမ်းခရီးရှိ စစ်ဆေးရေးဂိတ်များတွင် စကားဖြင့် နှောင့်ယှက်စော်ကားမှုများ ကြုံတွေ့ရခြင်း။",
+                participation: "Eng: Heavy household chore loads limit women's input in designs.\nMya: အိမ်မှုကိစ္စများပြားသဖြင့် အမျိုးသမီးများ စီမံကိန်းရေးဆွဲရာတွင် ပါဝင်ဆွေးနွေးရန် အချိန်မရခြင်း။",
+                finding: "Eng: Extreme physical distances (exceeding 3 kilometers) across rugged, unlit mountainous terrains to access clean water points pose physical safety risks for vulnerable community members. Lone female travelers report feeling unsafe and encountering checkpoints and verbal harassment.\nMya: ဝေးလံပြီး မတ်စောက်ကာ လမ်းမီးမရှိသော တောင်ပေါ်လမ်းများတွင် သောက်သုံးရေသွားယူရသဖြင့် ထိခိုက်လွယ်သူများအတွက် အန္တရာယ်ရှိပြီး လမ်းခရီးစစ်ဆေးရေးဂိတ်များ၌ အမျိုးသမီးများ နှောင့်ယှက်မှုများ ကြုံတွေ့နေရပါသည်။", 
+                recom: "Eng: Build localized, decentralized gravity-fed micro-distribution water networks closer to the central settlements. Implement community-designed water schedules, build secure rest shelters along paths, and establish companion systems.\nMya: ရွာနှင့် နီးကပ်သောနေရာများတွင် ရေပေးဝေရေးကွန်ရက်ငယ်များကို ဆောက်လုပ်ပေးပါ။ လူထုမှရေးဆွဲသော ရေရယူရေးအချိန်ဇယားများကို အကောင်အထည်ဖော်ပြီး သွားလာရာတွင် အုပ်စုလိုက်သွားရန် စီစဉ်ပါ။", 
+                stateRegion: "Shan State (South)" 
+            },
+            { 
+                name: "Nyaungshwe", 
+                officer: "Padang Aung", 
+                state: "Shan (South)", 
+                lat: 20.6558, 
+                lng: 96.9317, 
+                date: "2026-03-11", 
+                method: "FGD", 
+                male: 5, 
+                female: 6,
+                access: "Eng: Lack of designated space for vulnerable queues during distribution.\nMya: ကုန်ပစ္စည်းဖြန့်ဝေရာတွင် ထိခိုက်လွယ်သူများအတွက် သီးသန့်တန်းစီရန် နေရာမရှိခြင်း။",
+                safety: "Eng: Risks of elderly falling due to unorganized push-and-shove behaviors.\nMya: စနစ်တကျမရှိဘဲ တိုးဝှေ့တန်းစီရသဖြင့် သက်ကြီးရွယ်အိုများ လဲကျထိခိုက်မှု ဖြစ်နိုင်ခြေရှိခြင်း။",
+                participation: "Eng: Community consultations exclude input from nursing mothers.\nMya: တိုင်ပင်ဆွေးနွေးမှုများတွင် နို့တိုက်မိခင်များ၏ လိုအပ်ချက်ကို ထည့်သွင်းစဉ်းစားမှုမရှိခြင်း။",
+                finding: "Eng: Highly unorganized, chaotic distribution queues create physical congestion, leading to push-and-shove incidents that pose physical safety risks to elderly, disabled, and pregnant beneficiaries.\nMya: စနစ်တကျမရှိသော ကူညီထောက်ပံ့မှု ဖြန့်ဝေရေးစနစ်များကြောင့် တိုးဝှေ့ရသဖြင့် သက်ကြီးရွယ်အိုများ၊ မသန်စွမ်းသူများနှင့် ကိုယ်ဝန်ဆောင်မိခင်များအတွက် လဲကျထိခိုက်နိုင်သည့် အန္တရာယ်များ ဖြစ်ပေါ်နေပါသည်။", 
+                recom: "Eng: Redesign the distribution site using clear physical ropes and directional arrows. Implement separated priority seating areas and allocate fast-track service queues for highly vulnerable groups.\nMya: ကြိုးများနှင့် လမ်းညွှန်မြှားများအသုံးပြု၍ ဖြန့်ဝေရေးနေရာကို စနစ်တကျ ပြန်လည်ပြင်ဆင်ပါ။ ထိခိုက်လွယ်သူများအတွက် သီးသန့်ဦးစားပေးတန်းစီစနစ်နှင့် ထိုင်ခုံနေရာများကို စီစဉ်ပေးပါ။", 
+                stateRegion: "Shan State (South)" 
+            },
+            { 
+                name: "Hsipaw", 
+                officer: "April Seng", 
+                state: "Shan (North)", 
+                lat: 22.6147, 
+                lng: 97.2961, 
+                date: "2026-03-16", 
+                method: "FGD", 
+                male: 0, 
+                female: 10,
+                access: "Eng: Unlit paths make shared latrines inaccessible after sunset.\nMya: လမ်းမီးမရှိသဖြင့် ညဘက်တွင် အများသုံးသန့်စင်ခန်းများသို့ မသွားရောက်နိုင်ခြင်း။",
+                safety: "Eng: Fears of gender-based violence inside dark communal latrines.\nMya: အများသုံးအိမ်သာများတွင် မှောင်မိုက်နေသဖြင့် လိင်ပိုင်းဆိုင်ရာ အကြမ်းဖက်မှုခံရမည်ကို စိုးရိမ်ခြင်း။",
+                participation: "Eng: 100% female FGD shows high desire but low agency in committee governance.\nMya: ၁၀၀% အမျိုးသမီးများသာ ပါဝင်သော အုပ်စုအတွင်း စီမံခန့်ခွဲမှုကော်မတီများတွင် ဦးဆောင်လိုသော်လည်း အခွင့်အရေးမရရှိခြင်း။",
+                finding: "Eng: A 100% female FGD revealed alarming protection gaps along dark, unlit paths leading to shared communal latrines. Women and girls report avoiding these paths after dusk due to safety concerns and fear of gender-based harassment near the camp boundary.\nMya: လမ်းမီးမရှိသော သန့်စင်ခန်းသွားရာလမ်းများတွင် အမျိုးသမီးများနှင့် မိန်းကလေးငယ်များ ညဘက်၌ နှောင့်ယှက်ခံရမည်ကို အလွန်စိုးရိမ်သဖြင့် သန့်စင်ခန်းသွားခြင်းကို ရှောင်ကြဉ်နေရပါသည်။", 
+                recom: "Eng: Procure and install solar-powered streetlights along public paths and directly outside latrines. Support local women's committees to distribute hand-held solar torches and implement lockable doors inside latrines.\nMya: သန့်စင်ခန်းသွားရာ လမ်းကြောင်းတစ်လျှောက်တွင် ဆိုလာမီးတိုင်များ တပ်ဆင်ပါ။ အမျိုးသမီးများအတွက် လက်ကိုင်ဆိုလာဓာတ်မီးများ ဖြန့်ဝေပေးပြီး အိမ်သာတံခါးများကို အတွင်းမှ ဂျက်ကန်တပ်ဆင်ပါ။", 
+                stateRegion: "Shan State (North)" 
+            },
+            { 
+                name: "Demoso", 
+                officer: "Hsar Pi Ko", 
+                state: "Kayah", 
+                lat: 19.5317, 
+                lng: 97.1603, 
+                date: "2026-03-18", 
+                method: "FGD", 
+                male: 4, 
+                female: 8,
+                access: "Eng: Dangerous movement patterns dictated by active conflict boundaries.\nMya: တိုက်ပွဲများကြောင့် သွားလာရေးလမ်းကြောင်းများ ကန့်သတ်ခံရပြီး ဘေးကင်းမှုမရှိခြင်း။",
+                safety: "Eng: Severe panic and psychological trauma from artillery shelling.\nMya: လက်နက်ကြီးကျည်ကျရောက်မှုများကြောင့် အပြင်းအထန် စိတ်ပိုင်းဆိုင်ရာ ထိခိုက်ကြောက်ရွံ့နေရခြင်း။",
+                participation: "Eng: Forest shelter populations have zero access to consultation forums.\nMya: တောတွင်းခိုလှုံနေရသည့် စစ်ဘေးရှောင်များမှာ ကူညီထောက်ပံ့ရေး တိုင်ပင်ဆွေးနွေးပွဲများတွင် မပါဝင်နိုင်ခြင်း။",
+                finding: "Eng: Displaced community members residing in temporary forest shelters express severe psychological distress and panic due to frequent artillery shelling close to their settlements. Water access points are located in exposed, unwooded paths, leaving women and girls vulnerable to safety risks when fetching water during evening hours.\nMya: တောထဲတွင် ခိုလှုံနေရသော စစ်ဘေးရှောင်များသည် လက်နက်ကြီးများ မကြာခဏ ပစ်ခတ်မှုကြောင့် အလွန်စိုးရိမ်ထိတ်လန့်နေရပြီး ကာကွယ်မှုမရှိသော လမ်းများတွင် ရေသွားယူရသဖြင့် အမျိုးသမီးများ အန္တရာယ်ရှိနေသည်။", 
+                recom: "Eng: Organize immediate mobile psychological first aid (PFA) sessions. Establish early-warning focal points to coordinate alert signals, distribute community-level protective shelters, and reschedule water retrieval shifts to daylight hours utilizing community-led buddy groups.\nMya: အရေးပေါ် စိတ်ပိုင်းဆိုင်ရာ ကူညီမှု (PFA) များကို နယ်လှည့်အဖွဲ့များဖြင့် စီစဉ်ပေးပါ။ ကြိုတင်သတိပေးစနစ်များ ထားရှိပြီး ရေခရီးစဉ်ကို နေ့ခင်းဘက်တွင် အုပ်စုလိုက် သွားရောက်ရန် ပြင်ဆင်ပါ။", 
+                stateRegion: "Kayah State" 
+            },
+            { 
+                name: "Lashio", 
+                officer: "Grace Dau Naw", 
+                state: "Shan (North)", 
+                lat: 22.9644, 
+                lng: 97.7525, 
+                date: "2026-03-18", 
+                method: "FGD", 
+                male: 3, 
+                female: 4,
+                access: "Eng: Extreme roadblock delays preventing access to central city clinics.\nMya: စစ်ဆေးရေးဂိတ်များကြောင့် မြို့ပေါ်ရှိ ဆေးခန်းများသို့ အရေးပေါ်သွားရောက်ရန် အလွန်ခက်ခဲခြင်း။",
+                safety: "Eng: Suspicious interrogations and security threats at army checkpoints.\nMya: ဂိတ်များတွင် စစ်ဆေးမေးမြန်းမှုများ ပြင်းထန်ပြီး ဖမ်းဆီးထိန်းသိမ်းခံရမည့် အန္တရာယ်ရှိခြင်း။",
+                participation: "Eng: Humanitarian planning excludes input from localized neighborhood representatives.\nMya: ကူညီထောက်ပံ့ရေး အစီအစဉ်များတွင် ရပ်ကွက်ကိုယ်စားလှယ်များ၏ စကားသံကို ထည့်သွင်းခြင်းမရှိခြင်း။",
+                finding: "Eng: Extremely frequent military checkpoint delays and unpredictable roadblock blockades restrict movement, preventing critical patient transit during emergencies. Local responders lack formal identification documents, exposing them to questioning and security risks.\nMya: ဂိတ်များတွင် အချိန်ကြာမြင့်စွာ စစ်ဆေးခြင်းနှင့် လမ်းပိတ်ဆို့မှုများကြောင့် အရေးပေါ်လူနာများကို သယ်ယူရန် အလွန်ခက်ခဲပြီး ဒေသခံစေတနာ့ဝန်ထမ်းများမှာလည်း သက်သေခံကတ်မရှိသဖြင့် မေးမြန်းစစ်ဆေးခြင်း ခံနေရသည်။", 
+                recom: "Eng: Establish standardized, organization-signed patient referral identification letters. Coordinate localized safety corridors with local authorities, and train emergency drivers on neutral humanitarian negotiation protocols.\nMya: အဖွဲ့အစည်းမှ ထောက်ခံထားသော အရေးပေါ်လွှဲပြောင်းစာများကို စနစ်တကျ ပြုလုပ်ပေးပါ။ ဒေသခံအာဏာပိုင်များနှင့် ညှိနှိုင်း၍ ဘေးကင်းသော လမ်းကြောင်းများ ဖော်ဆောင်ပါ။", 
+                stateRegion: "Shan State (North)" 
+            },
+            { 
+                name: "Namtu", 
+                officer: "Khaing Myint Zu", 
+                state: "Shan (North)", 
+                lat: 22.9861, 
+                lng: 97.4042, 
+                date: "2026-03-18", 
+                method: "KII", 
+                male: 0, 
+                female: 3,
+                access: "Eng: Language barrier inside medical camps where staff only speak Burmese.\nMya: ကျန်းမာရေးဆေးခန်းများတွင် မြန်မာစကားသာ ပြောဆိုသဖြင့် ဆက်သွယ်ရန် ခက်ခဲခြင်း။",
+                safety: "Eng: Shyness to share intimate reproductive symptoms with male staff.\nMya: အမျိုးသားဆရာဝန်များနှင့် ဆေးဘက်ဝန်ထမ်းများအား အမျိုးသမီးကျန်းမာရေးပြဿနာများ ပြောပြရန် ရှက်ရွံ့ခြင်း။",
+                participation: "Eng: Total exclusion of non-Burmese speaking women from monitoring activities.\nMya: မြန်မာစကား မပြောတတ်သော တိုင်းရင်းသူများမှာ ဆွေးနွေးမှုများတွင် ပါဝင်ခွင့်မရခြင်း။",
+                finding: "Eng: Local women report feeling completely excluded from medical support because of a lack of female healthcare personnel and translators at central clinics, hindering them from discussing personal reproductive health.\nMya: အမျိုးသမီးကျန်းမာရေးဝန်ထမ်းများနှင့် ဘာသာပြန်များ မရှိသဖြင့် ဆေးခန်းများတွင် အမျိုးသမီးများသည် မိမိတို့၏ သားဖွားမီးယပ် ကျန်းမာရေးကိစ္စများကို ပွင့်လင်းစွာ မဆွေးနွေးနိုင်ဘဲ ချန်လှပ်ထားခြင်း ခံနေရသည်။", 
+                recom: "Eng: Recruit and deploy local female healthcare facilitators and translators. Establish private, segregated consultation booths within mobile clinics to preserve patient dignity and confidentiality.\nMya: ဒေသခံ အမျိုးသမီးကျန်းမာရေးဝန်ထမ်းများနှင့် ဘာသာပြန်များကို ခန့်အပ်ပါ။ ဆေးခန်းအတွင်း သီးသန့်ဆွေးနွေးခန်းများ စီစဉ်ပေးခြင်းဖြင့် လျှို့ဝှက်ချက်ကို ထိန်းသိမ်းပါ။", 
+                stateRegion: "Shan State (North)" 
+            },
+            { 
+                name: "Pawintphyu", 
+                officer: "Myat Thandar Nyein", 
+                state: "Sagaing", 
+                lat: 20.3703, 
+                lng: 94.6192, 
+                date: "2026-03-19", 
+                method: "KII", 
+                male: 0, 
+                female: 3,
+                access: "Eng: High cost of private transport hinders access to markets.\nMya: သယ်ယူပို့ဆောင်ရေး စရိတ်ကြီးမြင့်သဖြင့် စျေးကွက်များသို့ သွားရောက်ရန် ခက်ခဲခြင်း။",
+                safety: "Eng: Lack of separate washing facilities inside temporary camps.\nMya: ယာယီစခန်းများတွင် သီးသန့်ရေချိုးရန် နေရာမရှိသဖြင့် အမျိုးသမီးများ စိုးရိမ်ရခြင်း။",
+                participation: "Eng: Displaced females have no platform to submit safety feedback.\nMya: စစ်ဘေးရှောင်အမျိုးသမီးများအနေဖြင့် မိမိတို့၏ လုံခြုံရေးပြဿနာများကို တင်ပြရန် လမ်းကြောင်းမရှိခြင်း။",
+                finding: "Eng: Displaced women and girls living in crowded makeshift shelters report a severe lack of personal privacy and clean sanitary options, exposing them to health issues and dignity concerns.\nMya: ယာယီတဲများတွင် စုပြုံနေထိုင်ရသဖြင့် အမျိုးသမီးများနှင့် မိန်းကလေးငယ်များအတွက် ကိုယ်ရေးကိုယ်တာ လျှို့ဝှက်ချက်နှင့် သန့်ရှင်းသော မိန်းမကိုယ်သန့်စင်ရေး ပစ္စည်းများ လုံလောက်စွာ မရရှိဘဲ ဂုဏ်သိက္ခာပိုင်း ထိခိုက်နေရသည်။", 
+                recom: "Eng: Procure and distribute comprehensive, culturally appropriate hygiene and dignity kits. Install gender-segregated toilets equipped with secure inside locks and solar-powered lights.\nMya: အမျိုးသမီးများအတွက် လုံခြုံစိတ်ချရသော တကိုယ်ရေသန့်ရှင်းမှု ပစ္စည်း (Dignity Kit) များကို စနစ်တကျ ဖြန့်ဝေပေးပါ။ သီးသန့်အိမ်သာများကို အတွင်းဂျက်ကန်များဖြင့် တည်ဆောက်ပါ။", 
+                stateRegion: "Sagaing Region" 
+            },
+            { 
+                name: "Kalaw", 
+                officer: "Naw Eh Thi Phaw", 
+                state: "Shan (South)", 
+                lat: 20.6272, 
+                lng: 96.5567, 
+                date: "2026-03-20", 
+                method: "FGD", 
+                male: 9, 
+                female: 4,
+                access: "Eng: Low understanding of available help systems and hotlines.\nMya: အကူအညီရယူနိုင်သည့် နည်းလမ်းများနှင့် ဖုန်းနံပါတ်များကို ကောင်းစွာ မသိရှိခြင်း။",
+                safety: "Eng: Fear of political or community retaliation if feedback is traced.\nMya: တုံ့ပြန်ချက်ပေးပါက မိမိတို့အား တဖက်သတ် အရေးယူမည် သို့မဟုတ် အကူအညီဖြတ်တောက်မည်ကို စိုးရိမ်ခြင်း။",
+                participation: "Eng: High presence in general discussions but zero actual decision-making influence.\nMya: အစည်းအဝေးများသို့ တက်ရောက်သော်လည်း ဆုံးဖြတ်ချက်ချရာတွင် အကြံပြုချက်များကို အကောင်အထည်မဖော်ခြင်း။",
+                finding: "Eng: While there is high community participation during program consultations, there is an absolute lack of secure, anonymous feedback pathways. Respondents worry about confidentiality and fear that voicing complaints about aid distribution could lead to exclusion from aid.\nMya: လူထုပါဝင်ဆွေးနွေးမှုများ ရှိသော်လည်း တုံ့ပြန်ချက်များကို လျှို့ဝှက်စွာ ပေးနိုင်သည့်စနစ် မရှိသဖြင့် အကူအညီ ခွဲဝေမှုအပေါ် အကြံပြုရန် စိုးရိမ်ထိတ်လန့်နေကြပါသည်။", 
+                recom: "Eng: Design and install physical, robust, lockable suggestion and complaint wooden boxes at centralized nodes. Assign the validation and opening of these boxes strictly to the designated Protection Focal Point to ensure absolute confidentiality.\nMya: သော့ခတ်နိုင်သော တုံ့ပြန်ချက်သေတ္တာများကို လူစည်ကားရာနေရာများတွင် တပ်ဆင်ပါ။ သေတ္တာများကို ဖွင့်လှစ်ခြင်းကို လျှို့ဝှက်ကာကွယ်ရေးဝန်ထမ်းမှ တိုက်ရိုက်ဆောင်ရွက်ပါ။", 
+                stateRegion: "Shan State (South)" 
+            },
+            { 
+                name: "Hlaingbwe", 
+                officer: "Nan Kyi Kyi Khaing", 
+                state: "Kayin", 
+                lat: 16.8978, 
+                lng: 97.8383, 
+                date: "2026-03-23", 
+                method: "FGD", 
+                male: 5, 
+                female: 5,
+                access: "Eng: Disseminated warning brochures printed solely in standard Burmese.\nMya: ဘေးအန္တရာယ်သတိပေးစာစောင်များကို မြန်မာဘာသာဖြင့်သာ ပုံနှိပ်ထားသဖြင့် ဖတ်ရှုမလည်ခြင်း။",
+                safety: "Eng: Inability to comprehend evacuation alerts in active conflict zones.\nMya: တိုက်ပွဲရှောင်ရမည့် သတိပေးချက်များကို ဘာသာစကားအခက်အခဲကြောင့် အချိန်မီ နားမလည်နိုင်ခြင်း။",
+                participation: "Eng: Ethnic Karen women have no voice in planning meetings.\nMya: ကရင်တိုင်းရင်းသူများ စီမံကိန်းအစည်းအဝေးများတွင် ကိုယ်တိုင်ပါဝင်ပြောဆိုခွင့်မရခြင်း။",
+                finding: "Eng: Active language barriers significantly isolate the assessed ethnic minority community. Crucial disaster warning notices, health protocols, and feedback guidelines are strictly distributed in Burmese, preventing non-literate and non-Burmese speaking community members from understanding critical alerts.\nMya: ဘာသာစကားအခက်အခဲကြောင့် ဘေးအန္တရာယ်ကြိုတင်ကာကွယ်ရေး သတိပေးချက်များနှင့် ကျန်းမာရေးလမ်းညွှန်ချက်များကို ဒေသခံလူနည်းစုများ အချိန်မီမသိရှိရဘဲ အန္တရာယ်ကြုံတွေ့နေရသည်။", 
+                recom: "Eng: Recenter information operations by translating all physical warning flyers, guidance banners, and CBFM response rules into local S'gaw Karen and Pwo Karen dialects. Recruit local bilingual focal points to facilitate discussions.\nMya: သတိပေးပိုစတာများနှင့် စာစောင်များကို စကောကရင်၊ ပိုးကရင် ဘာသာစကားများသို့ ပြန်ဆိုပြီး ဖြန့်ဝေပါ။ ဒေသခံနှစ်ဘာသာပြောနိုင်သူများကို ခန့်အပ်ဆွေးနွေးပါ။", 
+                stateRegion: "Kayin State" 
+            },
+            { 
+                name: "Muse", 
+                officer: "Min Htet Lin", 
+                state: "Shan (North)", 
+                lat: 23.9961, 
+                lng: 97.8989, 
+                date: "2026-03-23", 
+                method: "FGD", 
+                male: 1, 
+                female: 12,
+                access: "Eng: Unregulated queues force children to wait in hot sun for hours.\nMya: စနစ်တကျမရှိသော တန်းစီစနစ်ကြောင့် ကလေးငယ်များ နေပူထဲတွင် နာရီပေါင်းများစွာ စောင့်ဆိုင်းရခြင်း။",
+                safety: "Eng: Exposure of children to passing vehicle traffic near distribution gates.\nMya: ဖြန့်ဝေရေးနေရာ အဝင်ဝတွင် ဖြတ်သန်းသွားလာနေသော ကား/ဆိုင်ကယ်များကြောင့် ကလေးများအတွက် ဘေးအန္တရာယ်ရှိခြင်း။",
+                participation: "Eng: Mother-led focus groups request kid play zones near centers.\nMya: မိခင်များက ကလေးများဆော့ကစားနိုင်ရန် သီးသန့်ဘေးကင်းသော နေရာတစ်ခု စီစဉ်ပေးရန် တောင်းဆိုခြင်း။",
+                finding: "Eng: Overcrowded, unmonitored communal transit spaces and poorly planned queues expose children to safety risks. Women express concern about having to monitor children while standing in long, disorganized lines.\nMya: စနစ်တကျမရှိသော တန်းစီစနစ်နှင့် လူစုလူဝေးကြောင့် မိခင်များသည် ၎င်းတို့၏ ကလေးငယ်များကို လုံခြုံစွာ စောင့်ရှောက်ရန် ခက်ခဲပြီး လမ်းပေါ်တွင် ယာဉ်အန္တရာယ်များ ကြုံတွေ့နေရသည်။", 
+                recom: "Eng: Set up dedicated, monitored child-friendly spaces adjacent to distribution nodes. Restructure layout with separated priority queues, fast-tracking female-headed households with small children.\nMya: ဖြန့်ဝေရေးစခန်းအနီးတွင် ကလေးများအတွက် ဘေးကင်းသော ကလေးကစားကွင်း (Child-Friendly Space) ကို ပြင်ဆင်ပါ။ မိခင်များနှင့် ကလေးငယ်များကို ဦးစားပေးဖြန့်ဝေပါ။", 
+                stateRegion: "Shan State (North)" 
+            },
+            { 
+                name: "Loikaw", 
+                officer: "Nay Aung Htwe", 
+                state: "Kayah", 
+                lat: 19.6742, 
+                lng: 97.2094, 
+                date: "2026-03-26", 
+                method: "FGD", 
+                male: 3, 
+                female: 3,
+                access: "Eng: High physical blocks on primary roads leading to health centers.\nMya: ဆေးပေးခန်းများသို့ သွားရာလမ်းများတွင် မြေမြှုပ်မိုင်းနှင့် ပိတ်ဆို့မှုများ ရှိနေခြင်း။",
+                safety: "Eng: Terror and severe safety threat of stepping on landmines.\nMya: မြေမြှုပ်မိုင်းများ ပေါက်ကွဲမှုကြောင့် ခြေလက်အင်္ဂါဆုံးရှုံးခြင်းနှင့် အသက်အန္တရာယ် ထိခိုက်နိုင်ခြေ မြင့်မားခြင်း။",
+                participation: "Eng: Affected families cannot travel to feedback forums in safety.\nMya: ဘေးအန္တရာယ်များပြားသဖြင့် ရပ်ရွာလူထုမှာ ဆွေးနွေးပွဲများသို့ သွားရောက်ဆွေးနွေးနိုင်ခြင်းမရှိခြင်း။",
+                finding: "Eng: High concentration of detected landmines and explosive remnants of war (ERW) along the primary access road leading to the school and health post creates severe, life-threatening transit hazards for children and families.\nMya: စာသင်ကျောင်းနှင့် ကျန်းမာရေးဆေးခန်းသို့ သွားရာပင်မလမ်းတစ်လျှောက်တွင် မြေမြှုပ်မိုင်းများနှင့် စစ်ကျန်လက်နက်ပစ္စည်းများ ရှိနေသဖြင့် ကလေးငယ်များနှင့် ရပ်ရွာလူထုအတွက် နေ့စဉ်အသက်အန္တရာယ် စိုးရိမ်နေရသည်။", 
+                recom: "Eng: Partner with specialized mine action groups to implement immediate Mine Risk Education (MRE) workshops. Produce and post clear, color-coded warning signs, and establish safe, verified transit corridors.\nMya: မိုင်းအန္တရာယ် ကာကွယ်ရေးအဖွဲ့များနှင့် ပူးပေါင်းပြီး မိုင်းအသိပညာပေးသင်တန်းများ ပြုလုပ်ပါ။ အရောင်ခွဲခြားထားသော သတိပေးဆိုင်းဘုတ်များ တပ်ဆင်ပါ။", 
+                stateRegion: "Kayah State" 
+            },
+            { 
+                name: "Naungkio", 
+                officer: "Arka Soe", 
+                state: "Shan (North)", 
+                lat: 22.3325, 
+                lng: 96.7972, 
+                date: "2026-03-27", 
+                method: "KII", 
+                male: 2, 
+                female: 0,
+                access: "Eng: Low-income residents cannot afford sky-high private car hire costs.\nMya: သယ်ယူပို့ဆောင်ရေးစရိတ် အဆမတန်မြင့်မားသဖြင့် ဆေးရုံသို့ ကိုယ်ပိုင်ကားငှားမသွားနိုင်ခြင်း။",
+                safety: "Eng: Risks of using unsafe low-cost farming trucks for emergency patient transport.\nMya: အရေးပေါ်လူနာများကို ဘေးကင်းမှုမရှိသော လယ်ယာသုံးထော်လာဂျီများဖြင့် တင်ဆောင်ရသဖြင့် ပိုမိုအန္တရာယ်ရှိခြင်း။",
+                participation: "Eng: Poorest households are completely voiceless in planning health outreach.\nMya: အလွန်နွမ်းပါးသော မိသားစုများသည် ဆေးကုသရေးအဖွဲ့များလာရောက်မည့် အစီအစဉ်တွင် ပါဝင်ပြောဆိုခွင့်မရခြင်း။",
+                finding: "Eng: Low-income households face extreme financial barriers due to soaring local transport costs, effectively blocking them from traveling to the nearest hospital for specialized life-saving care.\nMya: သယ်ယူပို့ဆောင်ရေးစရိတ် အဆမတန်မြင့်မားလာခြင်းကြောင့် ဆင်းရဲနွမ်းပါးသော မိသားစုများသည် အရေးပေါ်ကုသမှုခံယူရန် မြို့ပေါ်ဆေးရုံကြီးများသို့ မသွားရောက်နိုင်ဘဲ အသက်အန္တရာယ်ရှိနေသည်။", 
+                recom: "Eng: Set up an emergency transport subsidy fund specifically designated for medical emergencies. Partner with local truck drivers to secure fixed, fair-price transport agreements.\nMya: အရေးပေါ်ဆေးကုသရန် သွားလာစရိတ်အတွက် သီးသန့်ရန်ပုံငွေတစ်ရပ် ထားရှိပေးပါ။ ဒေသခံယာဉ်မောင်းများနှင့် ညှိနှိုင်း၍ သင့်လျော်သော နှုန်းထားများ သတ်မှတ်ပါ။", 
+                stateRegion: "Shan State (North)" 
+            },
+            { 
+                name: "Taunggyi", 
+                officer: "Christine", 
+                state: "Shan (South)", 
+                lat: 20.7889, 
+                lng: 97.0333, 
+                date: "2026-03-30", 
+                method: "FGD", 
+                male: 3, 
+                female: 5,
+                access: "Eng: Social isolation and rejection of IDPs during firewood collections.\nMya: ထင်းနှင့် ရေသွားရောက်ရှာဖွေရာတွင် စစ်ဘေးရှောင်များအား ခွဲခြားဆက်ဆံမှု ခံရခြင်း။",
+                safety: "Eng: Localized skirmishes and fights over scarce forest resources.\nMya: သစ်တောထွက်ပစ္စည်းများနှင့် အရင်းအမြစ်များအပေါ် မူလနေထိုင်သူများနှင့် အငြင်းပွားမှုများရှိခြင်း။",
+                participation: "Eng: IDP youth are forbidden to join host community welfare groups.\nMya: စစ်ဘေးရှောင်လူငယ်များ ဒေသခံလူမှုရေးအဖွဲ့များတွင် ပါဝင်ခွင့် အပိတ်ခံရခြင်း။",
+                finding: "Eng: Displaced populations face significant social stigma and resource competition with host communities over shared fuel, timber, and water resources, resulting in safety concerns during collection.\nMya: စစ်ဘေးရှောင်များနှင့် မူလနေထိုင်သူများအကြား သစ်တောအရင်းအမြစ်၊ ထင်းနှင့် သောက်ရေ ခွဲဝေသုံးစွဲမှုအပေါ် အချင်းချင်း တင်းမာမှုများနှင့် ခွဲခြားဆက်ဆံမှုများ ကြုံတွေ့နေရသည်။", 
+                recom: "Eng: Install clean-energy solar cooking stoves to reduce the need for firewood collection. Organize joint community-building activities and build shared spaces to bridge community divides.\nMya: ထင်းရှာဖွေရသည့် အန္တရာယ်ကို လျှော့ချရန် ဆိုလာမီးဖိုများ ဖြန့်ဝေပေးပါ။ နှစ်ဦးနှစ်ဖက် ပူးပေါင်းဆောင်ရွက်နိုင်မည့် ရပ်ရွာချစ်ကြည်ရေး လှုပ်ရှားမှုများ ပြုလုပ်ပါ။", 
+                stateRegion: "Shan State (South)" 
+            },
+            { 
+                name: "Mongyai (KII)", 
+                officer: "Arka Soe", 
+                state: "Shan (North)", 
+                lat: 22.4278, 
+                lng: 97.8322, 
+                date: "2026-04-01", 
+                method: "KII", 
+                male: 1, 
+                female: 1,
+                access: "Eng: No public notice board to announce distributions in advance.\nMya: ထောက်ပံ့ပစ္စည်းများ ဖြန့်ဝေမည့် အစီအစဉ်ကို ကြိုတင်သိရှိနိုင်မည့် အများပြည်သူသုံး ကြော်ငြာသင်ပုန်းမရှိခြင်း။",
+                safety: "Eng: Families missing aid because of missing alerts.\nMya: သတင်းအချက်အလက် မရရှိသဖြင့် ကူညီထောက်ပံ့မှုများကို မသိရှိဘဲ ကျန်ရစ်ခဲ့ရခြင်း။",
+                participation: "Eng: Women-headed households complain of lack of representation in date planning.\nMya: မိခင်တစ်ဦးတည်း ဦးဆောင်သော မိသားစုများသည် ဖြန့်ဝေမည့်ရက် ရွေးချယ်ရာတွင် ပါဝင်ပြောဆိုခွင့်မရခြင်း။",
+                finding: "Eng: Informational interviews with village elders reveal an absolute local information gap regarding relief distribution schedules, leaving vulnerable groups unaware of aid arrivals and susceptible to missing critical supplies.\nMya: ရပ်ရွာလူကြီးများနှင့် မေးမြန်းချက်အရ ကူညီထောက်ပံ့ပစ္စည်းများ လာရောက်ဖြန့်ဝေမည့်ရက်များကို ကြိုတင်မသိရှိရသဖြင့် အမှန်တကယ် လိုအပ်နေသော မိသားစုများ အကူအညီ လွတ်သွားသည့် အခြေအနေများ ရှိနေသည်။", 
+                recom: "Eng: Design and place prominent, weatherproof wooden notice boards in high-traffic areas. Post detailed schedules translated into local Shan dialects, and leverage village announcers to broadcast dates.\nMya: ရွာလယ်လူစည်ကားရာနေရာများတွင် မိုးဒဏ်လေဒဏ်ခံနိုင်သော ကြော်ငြာသင်ပုန်းများ ထားရှိပေးပါ။ ရှမ်းဘာသာဖြင့် ရေးသားကြေညာပြီး အသံချဲ့စက်ဖြင့် သတိပေးပါ။", 
+                stateRegion: "Shan State (North)" 
+            },
+            { 
+                name: "Hseni", 
+                officer: "Grace Dau Naw", 
+                state: "Shan (North)", 
+                lat: 23.1114, 
+                lng: 97.8517, 
+                date: "2026-04-02", 
+                method: "FGD", 
+                male: 3, 
+                female: 4,
+                access: "Eng: Demolished key transit bridge isolates remote river bank communities.\nMya: ပင်မတံတား ပျက်စီးသွားသဖြင့် မြစ်တဖက်ကမ်းရှိ ရွာသားများ ဆေးခန်းသို့ မလာရောက်နိုင်ခြင်း။",
+                safety: "Eng: High-risk rescue journeys across wild rivers in small wooden boats.\nMya: ရေစီးသန်သောမြစ်ကို စက်လှေငယ်များဖြင့် အန္တရာယ်ပြု ဖြတ်သန်းသွားလာနေရခြင်း။",
+                participation: "Eng: Isolated villages have zero representational pathways to local NGOs.\nMya: အဆက်အသွယ်ပြတ်တောက်နေသော ရွာသူရွာသားများသည် ကူညီရေးအဖွဲ့များနှင့် ဆက်သွယ်ရန် လမ်းကြောင်းမရှိခြင်း။",
+                finding: "Eng: Key transportation infrastructure, including local wooden and concrete bridges, has been demolished by recent hostilities. This physical destruction cuts off isolated villages from nearby health facilities, creating high-risk medical scenarios for pregnant women and injured elders.\nMya: စစ်ရေးပဋိပက္ခကြောင့် ရွာရှိ ပင်မတံတား ပျက်စီးသွားသဖြင့် မြစ်တဖက်ကမ်းရှိ ရွာသူရွာသားများ ဆေးခန်းသို့ မသွားရောက်နိုင်ဘဲ ကိုယ်ဝန်ဆောင်များ အန္တရာယ်ရှိနေသည်။", 
+                recom: "Eng: Establish village-level emergency health points and pre-position essential medicine reserves. Set up community-managed emergency transport protocols (such as wooden stretchers and local boat systems) and support temporary bridge rehabilitation.\nMya: ရွာအတွင်း ယာယီကျန်းမာရေးစောင့်ရှောက်မှုစခန်း ဖွင့်လှစ်ပေးပြီး အရေးပေါ် ဆေးဝါးများ စုဆောင်းပါ။ လှေဖြင့် အရေးပေါ် ကူညီသယ်ယူရေးအဖွဲ့ ဖွဲ့စည်းပါ။", 
+                stateRegion: "Shan State (North)" 
+            },
+            { 
+                name: "Laukkai", 
+                officer: "Aung Kyaw Nyein", 
+                state: "Shan (North)", 
+                lat: 23.6947, 
+                lng: 98.7289, 
+                date: "2026-04-07", 
+                method: "FGD", 
+                male: 5, 
+                female: 4,
+                access: "Eng: Steep mountain trails impossible to climb for disabled and injured individuals.\nMya: မတ်စောက်လွန်းသော တောင်တက်လမ်းများကြောင့် မသန်စွမ်းသူများနှင့် ဒဏ်ရာရသူများ ဖြန့်ဝေရေးစခန်းသို့ မလာနိုင်ခြင်း။",
+                safety: "Eng: Risks of elderly falling and slipping down deep rocky cliffs during rain.\nMya: မိုးရွာသွန်းချိန်တွင် ကျောက်ဆောင်ချောက်ကမ်းပါးလမ်းများ၌ ချော်လဲပြီး ပြုတ်ကျနိုင်သည့် အသက်အန္တရာယ်ရှိခြင်း။",
+                participation: "Eng: Lack of family-based feedback for disabled persons inside their homes.\nMya: အိမ်တွင်း၌သာ နေထိုင်ရသော မသန်စွမ်းသူများအတွက် တုံ့ပြန်ချက်ပေးရန် လမ်းကြောင်းမရှိခြင်း။",
+                finding: "Eng: Steep, rocky mountainous trails leading to physical distribution hubs completely isolate elderly residents and individuals with limited physical mobility, forcing them to rely on costly private transport or go without vital humanitarian aid.\nMya: မတ်စောက်ပြီး ကျောက်ဆောင်ထူထပ်သော တောင်ပေါ်လမ်းများကြောင့် သက်ကြီးရွယ်အိုများနှင့် မသန်စွမ်းသူများသည် အကူအညီဖြန့်ဝေရေးစခန်းသို့ မလာရောက်နိုင်ဘဲ အကူအညီမဲ့နေကြပါသည်။", 
+                recom: "Eng: Transition to a direct home-delivery mechanism for isolated households. Create auxiliary, flat-terrain assembly nodes, and train youth volunteer circles to assist vulnerable persons during distributions.\nMya: မလာရောက်နိုင်သော အိမ်ထောင်စုများအတွက် အိမ်တိုင်ရာရောက်စနစ် (Home-Delivery) ဖြင့် ကူညီပါ။ လူငယ်စေတနာ့ဝန်ထမ်းများဖြင့် ကူညီသယ်ယူပေးရန် စီစဉ်ပါ။", 
+                stateRegion: "Shan State (North)" 
+            }
+        ];
+
+        let map;
+        let markersGroup;
+
+        // Tab switching logic
+        function switchTab(tabId) {
+            document.getElementById('content-dashboard').classList.add('hidden');
+            document.getElementById('content-methodology').classList.add('hidden');
+            document.getElementById('content-ethics').classList.add('hidden');
+
+            document.getElementById('tab-dashboard').classList.remove('active-tab');
+            document.getElementById('tab-methodology').classList.remove('active-tab');
+            document.getElementById('tab-ethics').classList.remove('active-tab');
+
+            document.getElementById(`content-${tabId}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabId}`).classList.add('active-tab');
+
+            if (tabId === 'dashboard') {
+                // Leaflet requires invalidating layout if unhidden
+                setTimeout(() => { map.invalidateSize(); }, 200);
+            }
+        }
+
+        // Toggle Accordion Rows
+        function toggleAccordion(roleId) {
+            const el = document.getElementById(`body-${roleId}`);
+            const icon = document.getElementById(`icon-${roleId}`);
+            if (el.classList.contains('hidden')) {
+                el.classList.remove('hidden');
+                icon.classList.add('rotate-180');
+            } else {
+                el.classList.add('hidden');
+                icon.classList.remove('rotate-180');
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast-notif');
+            const msgEl = document.getElementById('toast-message');
+            msgEl.textContent = message;
+            
+            toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-2');
+            toast.classList.add('opacity-100', 'translate-y-0');
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-2');
+                toast.classList.remove('opacity-100', 'translate-y-0');
+            }, 3000);
+        }
+
+        // Filter geographical tables and maps
+        function filterGeology(regionVal) {
+            const rows = document.querySelectorAll('.geo-row');
+            rows.forEach(row => {
+                if (regionVal === 'all') {
+                    row.classList.remove('hidden');
+                } else if (row.getAttribute('data-state') === regionVal) {
+                    row.classList.remove('hidden');
+                } else {
+                    row.classList.add('hidden');
+                }
+            });
+
+            // Re-render Leaflet map markers to reflect active filter state
+            markersGroup.clearLayers();
+            townshipsData.forEach(t => {
+                if (regionVal === 'all' || t.state === regionVal) {
+                    addTownshipMarker(t);
+                }
+            });
+            showToast(`Filtered context views by: ${regionVal}`);
+        }
+
+        // Focus and select location in the sidebar profile
+        function selectTownshipOnUI(townshipName) {
+            const t = townshipsData.find(item => item.name === townshipName);
+            if (!t) return;
+
+            const total = t.male + t.female;
+            const malePct = ((t.male / total) * 100).toFixed(1);
+            const femalePct = ((t.female / total) * 100).toFixed(1);
+
+            document.getElementById('map-region-badge').textContent = t.stateRegion;
+            document.getElementById('map-region-heading').textContent = `${t.name} Community`;
+            document.getElementById('side-date').textContent = t.date;
+            document.getElementById('side-method').textContent = `${t.method} Session`;
+            document.getElementById('side-officer').textContent = t.officer;
+            document.getElementById('side-gender').textContent = `Total: ${total} [M: ${t.male} (${malePct}%), F: ${t.female} (${femalePct}%)]`;
+            
+            // Clean HTML rendering for findings and recommendations with both languages
+            document.getElementById('side-finding').innerHTML = t.finding.replace('\n', '<br><span class="text-xs text-slate-500 font-normal">');
+            document.getElementById('side-recom').innerHTML = t.recom.replace('\n', '<br><span class="text-xs text-slate-500 font-normal">');
+
+            const btn = document.getElementById('google-maps-btn');
+            btn.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(t.name + ' ' + t.stateRegion + ' Myanmar')}`;
+            btn.classList.remove('pointer-events-none', 'opacity-50');
+
+            showToast(`Loaded ${t.name} Baseline Record`);
+        }
+
+        function addTownshipMarker(t) {
+            const marker = L.circleMarker([t.lat, t.lng], {
+                radius: 10,
+                fillColor: t.state.includes('Shan') ? '#0284c7' : t.state === 'Kayah' ? '#0ea5e9' : t.state === 'Kayin' ? '#a855f7' : t.state === 'Rakhine' ? '#ef4444' : '#f59e0b',
+                color: '#fff',
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 0.8
+            }).addTo(markersGroup);
+
+            marker.bindPopup(`
+                <div class="text-xs space-y-1">
+                    <strong class="text-brandSlate block font-bold">${t.name}</strong>
+                    <span class="text-slate-500 block">Facilitator: ${t.officer}</span>
+                    <span class="bg-sky-50 text-brandSky font-bold px-1.5 py-0.5 rounded block text-center mt-1">${t.date}</span>
+                </div>
+            `);
+
+            marker.on('click', function() {
+                selectTownshipOnUI(t.name);
+            });
+        }
+
+        window.onload = function() {
+            // Build Table Rows dynamically based on Chronological Sorting
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+            
+            // Sort data chronologically prior to listing
+            const sortedTownships = [...townshipsData].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            sortedTownships.forEach(t => {
+                const total = t.male + t.female;
+                const mPct = ((t.male / total) * 100).toFixed(1);
+                const fPct = ((t.female / total) * 100).toFixed(1);
+
+                // Split strings for clean dual translation lines
+                const formatBilingualCell = (val) => {
+                    const lines = val.split('\n');
+                    return `<div class="font-semibold text-slate-700">${lines[0]}</div><div class="text-[10px] text-slate-400 mt-1 burmese-font">${lines[1] || ''}</div>`;
+                };
+
+                const row = document.createElement('tr');
+                row.className = "geo-row hover:bg-slate-50/50 transition-colors cursor-pointer";
+                row.setAttribute('data-state', t.state);
+                row.onclick = () => selectTownshipOnUI(t.name);
+
+                row.innerHTML = `
+                    <td class="p-4 pl-6 font-semibold text-brandSky">${t.stateRegion}</td>
+                    <td class="p-4">
+                        <div class="font-bold text-brandSlate">${t.name}</div>
+                        <div class="text-[9px] text-brandSky font-bold tracking-tight uppercase mt-1 bg-sky-50 px-1.5 py-0.5 rounded border border-sky-100 inline-block">
+                            <i class="fa-solid fa-map-location-dot mr-1"></i>Whole Township
+                        </div>
+                    </td>
+                    <td class="p-4 font-medium text-slate-500">${t.date}</td>
+                    <td class="p-4 font-semibold text-slate-600">${t.officer}</td>
+                    <td class="p-4"><span class="px-2 py-1 rounded bg-slate-100 font-bold text-[10px] text-slate-600">${t.method}</span></td>
+                    <td class="p-4 font-medium text-slate-600">Total: ${total}<br><span class="text-[10px] text-slate-400">M: ${t.male} (${mPct}%) | F: ${t.female} (${fPct}%)</span></td>
+                    <td class="p-4 text-xs">${formatBilingualCell(t.access)}</td>
+                    <td class="p-4 text-xs">${formatBilingualCell(t.safety)}</td>
+                    <td class="p-4 text-xs">${formatBilingualCell(t.participation)}</td>
+                    <td class="p-4 text-xs leading-relaxed">${formatBilingualCell(t.finding)}</td>
+                    <td class="p-4 pr-6 text-xs leading-relaxed">${formatBilingualCell(t.recom)}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Initialize OpenStreetMap Canvas centering over Central Myanmar coordinates
+            map = L.map('map-canvas').setView([21.0, 96.5], 6);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+
+            markersGroup = L.layerGroup().addTo(map);
+
+            // Populate initially with all records
+            townshipsData.forEach(t => {
+                addTownshipMarker(t);
+            });
+
+            // Trigger initial focus on Demoso
+            selectTownshipOnUI('Demoso');
+
+            initializeChartsWithSafetyCheck();
+        };
+
+        function initializeChartsWithSafetyCheck() {
+            if (typeof Chart === 'undefined') {
+                console.warn("Chart.js is not loaded yet. Retrying in 100ms...");
+                setTimeout(initializeChartsWithSafetyCheck, 100);
+                return;
+            }
+
+            try {
+                const ctxDistribution = document.getElementById('regionDistributionChart').getContext('2d');
+                new Chart(ctxDistribution, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Shan State (North)', 'Shan State (South)', 'Shan State (East)', 'Kayah State', 'Kayin State', 'Rakhine State', 'Sagaing Region'],
+                        datasets: [{
+                            label: 'Completed Sessions',
+                            data: [9, 4, 1, 2, 1, 1, 1],
+                            backgroundColor: '#0284c7',
+                            borderRadius: 8,
+                            barThickness: 24
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true, ticks: { stepSize: 2 } } }
+                    }
+                });
+
+                const ctxAccess = document.getElementById('accessBarriersChart').getContext('2d');
+                new Chart(ctxAccess, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Physical Distance / Terrain', 'Checkpoint Delays / Shelling', 'Sanitation & Hygiene Concerns', 'Language & Info Access Gaps'],
+                        datasets: [{
+                            data: [42.5, 30, 15, 12.5],
+                            backgroundColor: ['#0284c7', '#0ea5e9', '#ef4444', '#f59e0b'],
+                            borderWidth: 0,
+                            hoverOffset: 12
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10 } } },
+                        cutout: '70%'
+                    }
+                });
+            } catch (err) {
+                console.error("Error drawing Chart.js visualizations:", err);
+            }
+        }
+    </script>
+</body>
+</html>
